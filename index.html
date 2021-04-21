@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8>">
+        <title>Mein Projekt 1</title>
+    </head>
+    <body style='background-color: black;'>
+        <button id='button' style='z-index: 2; position: absolute; top: calc(50% - 24px); left: calc(50% - 40px); width: 80px; height: 48px; border-radius: 25px;' onclick='physics();'>BALLDROP</button>
+        <div id='main' style='z-index: 1; position: absolute; width: 100%; height: 100%; background-color: gray;'></div>
+        <canvas id='canvas' width='256px' height='256px' style='z-index: 3; position: absolute; top: 4px; left: 4px; background-color: #777;'></canvas>
+
+        <script>
+            var canvas = document.getElementById('canvas');
+            var ctx = canvas.getContext('2d');
+            //ctx.fillStyle = 'COLOR';
+            //ctx.fillRect(x, y, w, h);
+
+            var mainElem = document.getElementById('main');
+            //mainElem = document.body;
+            console.log(mainElem);
+
+            //  R   G   B   C
+
+            // 255   0 255   0-255
+            // 255 255   0 256-511
+            // 0   255 255 512-767
+
+            // 255   0 255 768-1023
+
+            var anim = setInterval(function() {animateCanvas();}, 16);
+
+            function animateCanvas() {
+                var r = 0-64;
+                var g = 255-64;
+                var b = 255-64;
+                var count = 0;
+
+                clearInterval(anim);
+
+                anim = setInterval(function() {
+                    document.getElementById('button').innerText = count;
+                    mainElem.style.backgroundColor = 'rgba(' + r + ', ' + g + ', ' + b + ')';
+
+                    if (count >= 0 && count < 256) {
+                        r++;
+                        g--;
+                    }
+                    if (count >= 256 && count < 512) {
+                        g++;
+                        b--;
+                    }
+                    if (count >= 512 && count < 768) {
+                        r--;
+                        b++;
+                    }
+
+                    count++;
+                    if (count >= 768) count = 0;
+                }, 16);
+            }
+
+            function physics() {
+                const FPS = 60;
+                const BALL_MASS = 1;
+                const g = 9.81;
+                const VELOCITY_THRESHOLD = 0.2;
+                const HEIGHT = 16;
+
+                var deltaTime = 1 / FPS;
+                var first = new Date().getTime();
+                var frames = 0;
+                var velocity = [0, 0];
+                //var position = [127, 0];
+                //var oldPosition = [127, 0];
+                var posX = 127;
+                var posY = 0;
+                var oldX = posX;
+                var oldY = posY;
+
+                cycle = setInterval(function() {
+                    ctx.fillStyle = '#777';
+                    ctx.fillRect(oldX, oldY-1, 10, HEIGHT + 2);
+
+                    velocity[1] += g * (frames * deltaTime) * deltaTime;
+                    posY += velocity[1];
+
+                    if (posY > 255 - HEIGHT) {
+                        posY = 255 - HEIGHT;
+                        console.log(velocity[1]);
+                        velocity[1] *= -1;
+
+
+                        if ((velocity[1] < VELOCITY_THRESHOLD && velocity[1] > -VELOCITY_THRESHOLD) || velocity[1] == Infinity) {
+                            console.warn('Ending');
+                            clearInterval(cycle);
+                            return;
+                        }
+                    }
+
+                    ctx.fillStyle = '#FFF';
+                    ctx.fillRect(posX, posY, 10, HEIGHT);
+
+                    oldY = posY;
+
+                    frames++;
+                    deltaTime = (new Date().getTime() - first) / 1000;
+                    first = new Date().getTime();
+
+                    if (frames * deltaTime > 20) clearInterval(cycle);
+                }, (1 / FPS) * 1000);
+            }
+
+            function dropBall(fric) {
+                var FPS = 60;
+                var deltaTime = 1 / FPS;
+                var first = new Date().getTime();
+                var frames = 0;
+                var y = 127;
+                var oldY = y;
+                var velocityY = -5;
+
+                const BALL_HEIGHT = 16;
+                const FRICTION = (fric === undefined) ? 0.042 : fric;
+                const MASS = 1;
+                db = setInterval(function() {
+                    velocityY += 9.81 * MASS * deltaTime;
+                    y += velocityY;
+
+                    //ctx.beginPath();
+                    ctx.fillStyle = '#777';
+                    ctx.fillRect(127, oldY-1, BALL_HEIGHT, BALL_HEIGHT + 2);
+                    //draw trans canvas over this and clear only rect area
+                    //ctx.arc(127, oldY-1, BALL_HEIGHT, 0, 2 * Math.PI);
+                    
+                    if (y >= 255 - BALL_HEIGHT) {
+                        y = 255 - BALL_HEIGHT;
+                        velocityY *= -1 + ((velocityY * velocityY) * ((FRICTION * FRICTION) / 2));
+                        console.log(velocityY);
+                        
+                        if ((velocityY < FRICTION && velocityY > -FRICTION) || velocityY == Infinity) {
+                            console.log('Velocity reached nearly 0 or Infinity. Stopping simulation after ' + frames + ' frames.');
+                            clearInterval(db);
+                            return;
+                        }
+                    }
+                    
+                    //ctx.beginPath();
+                    ctx.fillStyle = '#FFF';
+                    ctx.fillRect(127, y, BALL_HEIGHT, BALL_HEIGHT);
+                    //ctx.arc(127, y, BALL_HEIGHT/2, 0, 2 * Math.PI);
+                    //ctx.stroke();
+                    
+                    oldY = y;
+
+                    frames++;
+                    deltaTime = (new Date().getTime() - first) / 1000;
+                    first = new Date().getTime();
+                }, (1 / FPS) * 1000);
+
+                return 'Starting simulation.'
+            }
+        </script>
+    </body>
+</html>

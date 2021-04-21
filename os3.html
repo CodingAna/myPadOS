@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src='./app.js'></script>
+        <script src='./os.js'></script>
+        <script src='./hardware.js'></script>
+        <link rel='stylesheet' href='./main.css'>
+        <meta charset='UTF-8>'>
+        <title>myPad OS</title>
+    </head>
+    <body style='background-color: black;'>
+        <div id='pad' class='unselectable' style='z-index: 1; position: absolute; width: 700px; height: 500px; top: calc(50% - 250px); left: calc(50% - 350px); background-color: #777; border-radius: 15px;'>
+            <canvas id='canvas' class='unselectable' width='600px' height='450px' style='user-select: none; z-index: 2; position: absolute; top: calc(50% - 225px); left: calc(50% - 300px); background-color: #000; border-radius: 5px;'></canvas>
+            <div id='homeButton' class='unselectable' style='z-index: 3; position: absolute; width: 40px; height: 40px; top: calc(50% - 20px); left: calc(50% + 305px); background-color: #BBB; border-radius: 100%;'></div>
+        </div>
+        <div>
+            <img id='image' hidden>
+        </div>
+
+        <script>
+            var pad = document.getElementById('pad');
+            var canvas = document.getElementById('canvas');
+            var imageHolder = document.getElementById('image');
+
+            var os = new OS(pad, canvas, imageHolder);
+            var hardware_homebutton = new Hardware('homebutton', document.getElementById('homeButton'))
+
+            function animationBoot(ctx, deltaTime, animationFrames) {
+                var value = ((animationFrames * deltaTime) / 5) * 255;
+                if ((animationFrames * deltaTime) / 5 > 1.5) setAnimation(animationRenderHomescreen);
+                var valueString = 'rgb(' + value + ',' + value + ',' + value + ')';
+
+                ctx.beginPath();
+                ctx.fillStyle = valueString;
+                ctx.arc(299, 224, 50, 0, 2 * Math.PI);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.fillStyle = '#000000';
+                ctx.arc(354, 224, 30, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.fillStyle = '#000000';
+                ctx.arc(299, 289, 25, 0, 2 * Math.PI);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.fillStyle = valueString;
+                ctx.arc(314, 154, 20, 0.8 * Math.PI, 1.55 * Math.PI);
+                ctx.fill();
+            }
+
+            function renderAppSettings(ctx, ram, mouse, deltaTime, animationFrames) {
+                ctx.beginPath();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, 150, 450);
+
+                ctx.beginPath();
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.arc(299, 224, 25, 0.5 * Math.PI, 1.5 * Math.PI);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.arc(399, 224, 25, 1.5 * Math.PI, 0.5 * Math.PI);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.moveTo(299, 199);
+                ctx.lineTo(399, 199);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.moveTo(299, 249);
+                ctx.lineTo(399, 249);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.fillStyle = '#FF6666';
+                ctx.arc(mouse.x, mouse.y, 23, 0, 2 * Math.PI);
+                ctx.fill();
+
+                var ramData = ram.read(settings.getStartAddress(), settings);
+                if (ramData === 1) {
+                    ram.write(settings.getStartAddress(), settings, null);
+                }
+
+                var count = ram.read(settings.getStartAddress() + 1, settings);
+                for (var i=0; i<count; i++) {
+                    var position = ram.read(settings.getStartAddress() + 2 + i, settings);
+
+                    ctx.beginPath();
+                    ctx.fillStyle = '#FF6666';
+                    ctx.arc(position.x, position.y, 23, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+
+            var settings = new App('Settings', 'http://icons.iconarchive.com/icons/iynque/ios7-style/1024/Settings-icon.png', 6);
+            // RAM 0    : click state
+            // RAM 1    : click count
+            // RAM 2..  : mouse positions
+            settings.renderer = renderAppSettings;
+            settings.click = (mouse, ram) => {
+                var count = ram.read(settings.getStartAddress() + 1, settings) || 0;
+                ram.write(settings.getStartAddress() + 1, settings, count + 1);
+
+                ram.write(settings.getStartAddress(), settings, 1);
+                ram.write(settings.getStartAddress() + 2 + count, settings, mouse);
+            };
+            os.addApp(settings);
+
+            hardware_homebutton.getElement().onclick = () => {
+                os.homeScreen();
+            };
+            hardware_homebutton.getElement().onmousedown = () => {
+                hardware_homebutton.getElement().style.backgroundColor = '#AAA';
+            }
+            hardware_homebutton.getElement().onmouseup = () => {
+                hardware_homebutton.getElement().style.backgroundColor = '#BBB';
+            }
+
+            //os.homeScreen();
+        </script>
+    </body>
+</html>
