@@ -5,6 +5,9 @@ cd to the project directory (i.e. ~/Downloads/myPadOS)
 Type "php -S 0.0.0.0:8000" to start the php server
 
 ## Usage
+Open "localhost:8000/os3.html" in your browser to start myPadOS.
+
+## Files
 ### index.html
 Just a bouncy ball and a changing background.
 
