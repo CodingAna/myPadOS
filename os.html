@@ -51,7 +51,7 @@
                 ctx.fill();
             }
 
-            function renderAppSettings(ctx, ram, mouse, deltaTime, animationFrames) {
+            function settingsRenderer(ctx, ram, mouse, deltaTime, animationFrames) {
                 ctx.beginPath();
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(0, 0, 150, 450);
@@ -99,11 +99,11 @@
                 }
             }
 
-            var settings = new App('Settings', 'http://icons.iconarchive.com/icons/iynque/ios7-style/1024/Settings-icon.png', 6);
+            var settings = new App('Settings', 'http://icons.iconarchive.com/icons/iynque/ios7-style/1024/Settings-icon.png', 12);
             // RAM 0    : click state
             // RAM 1    : click count
             // RAM 2..  : mouse positions
-            settings.renderer = renderAppSettings;
+            settings.renderer = settingsRenderer;
             settings.click = (mouse, ram) => {
                 var count = ram.read(settings.getStartAddress() + 1, settings) || 0;
                 ram.write(settings.getStartAddress() + 1, settings, count + 1);
@@ -111,13 +111,25 @@
                 ram.write(settings.getStartAddress(), settings, 1);
                 ram.write(settings.getStartAddress() + 2 + count, settings, mouse);
             };
+
+            var paint = new App('Paint', 'https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fcdn.icon-icons.com%2Ficons2%2F195%2FPNG%2F256%2FPaint_23397.png&f=1&nofb=1', 256);
+            function paintRenderer(ctx, ram, mouse, deltaTime, animationFrames) {
+                ctx.beginPath();
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, 600, 450);
+            }
+            paint.renderer = paintRenderer;
+            paint.click = (mouse, ram) =>  {
+            };
+
             os.addApp(settings);
+            os.addApp(paint);
 
             hardware_homebutton.getElement().onclick = () => {
                 os.homeScreen();
             };
             hardware_homebutton.getElement().onmousedown = () => {
-                hardware_homebutton.getElement().style.backgroundColor = '#AAA';
+                hardware_homebutton.getElement().style.backgroundColor = '#999';
             }
             hardware_homebutton.getElement().onmouseup = () => {
                 hardware_homebutton.getElement().style.backgroundColor = '#BBB';
