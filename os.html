@@ -2,181 +2,30 @@
 <html>
     <head>
         <script src='./app.js'></script>
-        <meta charset="UTF-8>">
-        <title>Mein Projekt 1</title>
+        <script src='./os.js'></script>
+        <script src='./hardware.js'></script>
+        <link rel='stylesheet' href='./main.css'>
+        <meta charset='UTF-8>'>
+        <title>myPad OS</title>
     </head>
     <body style='background-color: black;'>
-        <div id='pad' style='z-index: 1; position: absolute; width: 700px; height: 500px; top: calc(50% - 250px); left: calc(50% - 350px); background-color: #777; border-radius: 15px;'>
-            <canvas id='canvas' width='600px' height='450px' style='z-index: 2; position: absolute; top: calc(50% - 225px); left: calc(50% - 300px); background-color: #000; border-radius: 5px;'></canvas>
-            <div id='homeButton' style='z-index: 3; position: absolute; width: 40px; height: 40px; top: calc(50% - 20px); left: calc(50% + 305px); background-color: #BBB; border-radius: 100%;'></div>
+        <div id='pad' class='unselectable' style='z-index: 1; position: absolute; width: 700px; height: 500px; top: calc(50% - 250px); left: calc(50% - 350px); background-color: #777; border-radius: 15px;'>
+            <canvas id='canvas' class='unselectable' width='600px' height='450px' style='user-select: none; z-index: 2; position: absolute; top: calc(50% - 225px); left: calc(50% - 300px); background-color: #000; border-radius: 5px;'></canvas>
+            <div id='homeButton' class='unselectable' style='z-index: 3; position: absolute; width: 40px; height: 40px; top: calc(50% - 20px); left: calc(50% + 305px); background-color: #BBB; border-radius: 100%;'></div>
         </div>
         <div>
             <img id='image' hidden>
         </div>
 
         <script>
-            class NoRAMAccess {constructor() {}}
-            class InvalidRAMAddress {constructor() {}}
-            class RAMOverFlow {constructor() {}}
-
-            let FPS = 60;
-            let HARDWARE_HOMEBUTTON = document.getElementById('homeButton');
-
-            var SOFTWARE_APPS = [];
-            var RAM = {
-                access: {
-                    'System': {
-                        startAddress: 0,
-                        size: 128
-                    }
-                },
-                data: []
-            };
-
-            for (var i=0; i<1024; i++) {
-                RAM.data[i] = null;
-            }
-
-            var mouseX = 0;
-            var mouseY = 0;
-
             var pad = document.getElementById('pad');
             var canvas = document.getElementById('canvas');
-            var ctx = canvas.getContext('2d');
-            var frames = 0;
-            var first = new Date().getTime();
-            var deltaTime = 1 / FPS;
+            var imageHolder = document.getElementById('image');
 
-            var currentAnimation = setInterval(function() {}, (1 / FPS) * 1000);
+            var os = new OS(pad, canvas, imageHolder);
+            var hardware_homebutton = new Hardware('homebutton', document.getElementById('homeButton'))
 
-            document.onmousemove = function(event) {
-                event = event || window.event;
-                mouseX = event.pageX - (pad.offsetLeft + canvas.offsetLeft);
-                mouseY = event.pageY - (pad.offsetTop + canvas.offsetTop);
-            }
-
-            canvas.onclick = function() {
-                var ramData = readRam(0, 'System');
-                if (ramData === null) {
-                    var x = 0;
-                    var y = 0;
-                    for (var i=0; i<SOFTWARE_APPS.length; i++) {
-                        var calcX = 31 + (95 * x);
-                        var calcY = 31 + (95 * y);
-                        if (mouseX >= calcX && mouseX < calcX + 64) {
-                            if (mouseY >= calcY && mouseY < calcY + 64) {
-                                var currentApp = SOFTWARE_APPS[i];
-                                writeRam(0, 'System', currentApp);
-                                var reserved = reserveRam(currentApp.getName(), 128);
-                                var started = currentApp.start(reserved[0], reserved[1]);
-                                setAnimation(status.render);
-                                break;
-                            }
-                        }
-
-                        x++;
-                        if (x >= 6) {
-                            x = 0;
-                            y++;
-                        }
-                        if (y >= 3) {
-                            y = 0;
-                            break;
-                        }
-                    }
-                } else {
-                    var currentApp = ramData;
-                    currentApp.click();
-                }
-            }
-
-            HARDWARE_HOMEBUTTON.onclick = function() {
-                flushRam();
-                setAnimation(animationRenderHomescreen);
-            }
-
-            function setAnimation(animation) {
-                clearInterval(currentAnimation);
-
-                var animationFrames = 0;
-                currentAnimation = setInterval(function() {
-                    ctx.clearRect(0, 0, 600, 450);
-                    animation(deltaTime, animationFrames);
-                    
-                    deltaTime = (new Date().getTime() - first) / 1000;
-                    first = new Date().getTime();
-                    frames++;
-                    animationFrames++;
-                }, (1 / FPS) * 1000);
-            }
-
-            /*function addApp(appName, imageSource, app) {
-                var image = document.getElementById('image');
-                image.src = imageSource;
-                SOFTWARE_APPS.push({
-                    name: appName,
-                    image: image.cloneNode(),
-                    start: function(ramStart, ramLength) {console.log('Opening ' + appName); app(ramStart, ramLength);},
-                });
-            }*/
-            function addApp(app) {
-                var image = document.getElementById('image');
-                image.src = app.getImageSource();
-                app.setImage(image.cloneNode());
-                SOFTWARE_APPS.push(app);
-            }
-
-            function reserveRam(caller, size) {
-                var sa = 0;
-                var lastKey = null;
-                Object.keys(RAM.access).forEach(function(key) {
-                    console.log(RAM.access[key]);
-                    lastKey = key;
-                    /*if (RAM.access[key].size) {
-                        sa = RAM.access[key].startAddress + RAM.access[key].size;
-                        break;
-                    }*/
-                });
-                if (lastKey !== null) sa = RAM.access[lastKey].startAddress + RAM.access[lastKey].size;
-                if (sa + size > 1024) {
-                    return RAMOverFlow;
-                }
-                RAM.access[caller] = {
-                    startAddress: sa,
-                    size: size,
-                }
-                return [sa, size];
-            }
-
-            function flushRam() {
-                RAM.access = {
-                    'System': {
-                        startAddress: 0,
-                        size: 128
-                    }
-                };
-                for (var i=0; i<1024; i++) {
-                    RAM.data[i] = null;
-                }
-            }
-
-            function readRam(address, caller) {
-                if (RAM.access[caller] === undefined) return NoRAMAccess;
-                if (address >= RAM.access[caller].startAddress && address < RAM.access[caller].startAddress + RAM.access[caller].size) {
-                    return RAM.data[address];
-                } else return InvalidRAMAddress;
-            }
-            
-            function writeRam(address, caller, data) {
-                if (RAM.access[caller] === undefined) return NoRAMAccess;
-                if (address >= RAM.access[caller].startAddress && address < RAM.access[caller].startAddress + RAM.access[caller].size) {
-                    RAM.data[address] = data;
-                } else return InvalidRAMAddress;
-            }
-
-            function animationTemplate(deltaTime, animationFrames) {}
-
-            function animationBoot(deltaTime, animationFrames) {
+            function animationBoot(ctx, deltaTime, animationFrames) {
                 var value = ((animationFrames * deltaTime) / 5) * 255;
                 if ((animationFrames * deltaTime) / 5 > 1.5) setAnimation(animationRenderHomescreen);
                 var valueString = 'rgb(' + value + ',' + value + ',' + value + ')';
@@ -202,26 +51,7 @@
                 ctx.fill();
             }
 
-            function animationRenderHomescreen(deltaTime, animationFrames) {
-                var x = 0;
-                var y = 0;
-                for (var i=0; i<SOFTWARE_APPS.length; i++) {
-                    var currentApp = SOFTWARE_APPS[i];
-                    ctx.drawImage(currentApp.getImage(), 31 + (95 * x), 31 + (95 * y), 64, 64);
-                    x++;
-                    if (x >= 6) {
-                        x = 0;
-                        y++;
-                    }
-                    if (y >= 3) {
-                        y = 0;
-                        //Show apps after changing view
-                        break;
-                    }
-                }
-            }
-
-            function renderAppSettings(deltaTime, animationFrames) {
+            function renderAppSettings(ctx, ram, mouse, deltaTime, animationFrames) {
                 ctx.beginPath();
                 ctx.fillStyle = '#FFFFFF';
                 ctx.fillRect(0, 0, 150, 450);
@@ -250,38 +80,50 @@
 
                 ctx.beginPath();
                 ctx.fillStyle = '#FF6666';
-                //check if it should render at mouse position or use old one (see in class definition to make easy access for extra functions (js docs may help))
-                ctx.arc(mouseX, mouseY, 23, 0, 2 * Math.PI);
+                ctx.arc(mouse.x, mouse.y, 23, 0, 2 * Math.PI);
                 ctx.fill();
 
+                var ramData = ram.read(settings.getStartAddress(), settings);
+                if (ramData === 1) {
+                    ram.write(settings.getStartAddress(), settings, null);
+                }
+
+                var count = ram.read(settings.getStartAddress() + 1, settings);
+                for (var i=0; i<count; i++) {
+                    var position = ram.read(settings.getStartAddress() + 2 + i, settings);
+
+                    ctx.beginPath();
+                    ctx.fillStyle = '#FF6666';
+                    ctx.arc(position.x, position.y, 23, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
             }
 
-            function clickFunctionSettings() {
-                console.log('clicked');
-                writeRam(this.startAddress, this, 'DATA');
+            var settings = new App('Settings', 'http://icons.iconarchive.com/icons/iynque/ios7-style/1024/Settings-icon.png', 6);
+            // RAM 0    : click state
+            // RAM 1    : click count
+            // RAM 2..  : mouse positions
+            settings.renderer = renderAppSettings;
+            settings.click = (mouse, ram) => {
+                var count = ram.read(settings.getStartAddress() + 1, settings) || 0;
+                ram.write(settings.getStartAddress() + 1, settings, count + 1);
+
+                ram.write(settings.getStartAddress(), settings, 1);
+                ram.write(settings.getStartAddress() + 2 + count, settings, mouse);
+            };
+            os.addApp(settings);
+
+            hardware_homebutton.getElement().onclick = () => {
+                os.homeScreen();
+            };
+            hardware_homebutton.getElement().onmousedown = () => {
+                hardware_homebutton.getElement().style.backgroundColor = '#AAA';
             }
-            
-            /*addApp('Settings', 'http://icons.iconarchive.com/icons/iynque/ios7-style/1024/Settings-icon.png', appSettings);
-            addApp('App Store', 'https://www.londonappbrewery.com/wp-content/uploads/2015/07/Apple-App-Store-Icon.png', appAppStore);
-            addApp('Clock', 'http://icons.iconarchive.com/icons/iynque/ios7-style/1024/Clock-icon.png', appClock);
-            addApp('Contacts', 'https://www.macitynet.it/wp-content/uploads/2014/06/Preview.png', appContacts);
-            addApp('Reminder', 'https://www.iphonefaq.org/files/styles/large/public/reminderapp.png?itok=74FO0yJo', appReminder);
-            addApp('Maps', 'https://data.mactechnews.de/Resized/530211_400x400_Contain_Zoom.jpg', appMaps);
+            hardware_homebutton.getElement().onmouseup = () => {
+                hardware_homebutton.getElement().style.backgroundColor = '#BBB';
+            }
 
-            addApp('Maps', 'https://data.mactechnews.de/Resized/530211_400x400_Contain_Zoom.jpg', appMaps);
-            addApp('Reminder', 'https://www.iphonefaq.org/files/styles/large/public/reminderapp.png?itok=74FO0yJo', appReminder);
-            addApp('Contacts', 'https://www.macitynet.it/wp-content/uploads/2014/06/Preview.png', appContacts);
-            addApp('Clock', 'http://icons.iconarchive.com/icons/iynque/ios7-style/1024/Clock-icon.png', appClock);*/
-
-            var settings = new App('Settings', 'http://icons.iconarchive.com/icons/iynque/ios7-style/1024/Settings-icon.png');
-            settings.render = renderAppSettings;
-            settings.click = clickFunctionSettings;
-
-            addApp(settings);
-
-            writeRam(0, 'System', null);
-            
-            setAnimation(animationBoot);
+            //os.homeScreen();
         </script>
     </body>
 </html>
