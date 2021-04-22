@@ -1,4 +1,8 @@
-class RAM {
+export class NoRAMAccess {constructor() {}}
+export class InvalidRAMAddress {constructor() {}}
+export class RAMOverFlow {constructor() {}}
+
+export class RAM {
     constructor(size) {
         this.size = size || 512;
         this.access = {};

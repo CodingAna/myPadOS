@@ -1,4 +1,4 @@
-class App {
+export class App {
     constructor(name, imageSource, ramSize) {
         this.name = name;
         this.imageSource = imageSource;

@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <script src='./app.js'></script>
-        <script src='./os.js'></script>
-        <script src='./hardware.js'></script>
         <link rel='stylesheet' href='./main.css'>
         <meta charset='UTF-8>'>
         <title>myPad OS</title>
@@ -17,7 +14,11 @@
             <img id='image' hidden>
         </div>
 
-        <script>
+        <script type='module'>
+            import { OS } from './os.js';
+            import { App } from './app.js';
+            import { Hardware } from './hardware.js';
+
             var pad = document.getElementById('pad');
             var canvas = document.getElementById('canvas');
             var imageHolder = document.getElementById('image');

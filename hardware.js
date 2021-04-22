@@ -1,4 +1,4 @@
-class Hardware {
+export class Hardware {
     constructor(name, element) {
         this.name = name;
         this.element = element;

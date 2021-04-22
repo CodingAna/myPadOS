@@ -1,34 +1,37 @@
-class NoRAMAccess {constructor() {}}
-class InvalidRAMAddress {constructor() {}}
-class RAMOverFlow {constructor() {}}
+import { RAM } from './ram.js';
 
-class OS {
+export class OS {
     constructor(pad, canvas, imageHolder) {
+        // constants
         this.FPS = 60;
-        this.APPLICATIONS = [];
+
+        // RAM
         this.ram = new RAM(1024);
         this.ram.flush();
-
-        this.mouseX = 0;
-        this.mouseY = 0;
-
+        
+        // HTML elements
         this.pad = pad || document.getElementById('pad');
         this.canvas = canvas || document.getElementById('canvas');
         this.ctx = this.canvas.getContext('2d');
         this.imageHolder = imageHolder || document.getElementById('image');
-
+        
+        // render data
         this.first = new Date().getTime();
         this.deltaTime = 1 / this.FPS;
+        this.currentRenderer = setInterval(() => {}, (1 / this.FPS) * 1000);
+        
+        // miscellaneous
+        this.applications = [];
+        this.mouseX = 0;
+        this.mouseY = 0;
 
-        this.currentRenderer = setInterval(function() {}, (1 / this.FPS) * 1000);
-
-        document.onmousemove = (event) => {
+        canvas.onmousemove = (event) => {
             event = event || window.event;
             this.mouseX = event.pageX - (this.pad.offsetLeft + this.canvas.offsetLeft);
             this.mouseY = event.pageY - (this.pad.offsetTop + this.canvas.offsetTop);
         }
 
-        canvas.onmousedown = (event) => {
+        canvas.onclick = (event) => {
             event = event || canvas.event;
             this.onclick();
         }
@@ -39,12 +42,12 @@ class OS {
         if (ramData === null) {
             var x = 0;
             var y = 0;
-            for (var i=0; i<this.APPLICATIONS.length; i++) {
+            for (var i=0; i<this.applications.length; i++) {
                 var calcX = 31 + (95 * x);
                 var calcY = 31 + (95 * y);
                 if (this.mouseX >= calcX && this.mouseX < calcX + 64) {
                     if (this.mouseY >= calcY && this.mouseY < calcY + 64) {
-                        var currentApp = this.APPLICATIONS[i];
+                        var currentApp = this.applications[i];
                         this.ram.write(0, 'System', currentApp);
                         //var reserved = this.ram.reserve(currentApp.getName(), 128);
                         //var started = currentApp.start(reserved[0], reserved[1]);
@@ -75,7 +78,7 @@ class OS {
     }
 
     applications = () => {
-        return this.APPLICATIONS;
+        return this.applications;
     }
 
     ramFunctions = () => {
@@ -85,7 +88,7 @@ class OS {
     addApp = (app) => {
         this.imageHolder.src = app.getImageSource();
         app.setImage(image.cloneNode());
-        this.APPLICATIONS.push(app);
+        this.applications.push(app);
     }
 
     startApp = (app) => {
@@ -95,11 +98,11 @@ class OS {
     }
 
     homeScreen = () => {
-        function hS(ctx, ram, mouse, deltaTime, animationFrames) {
+        this.render((ctx, ram, mouse, deltaTime, animationFrames) => {
             var x = 0;
             var y = 0;
-            for (var i=0; i<os.applications().length; i++) {
-                var currentApp = os.applications()[i];
+            for (var i=0; i<this.applications.length; i++) {
+                var currentApp = this.applications[i];
                 ctx.drawImage(currentApp.getImage(), 31 + (95 * x), 31 + (95 * y), 64, 64);
                 x++;
                 if (x >= 6) {
@@ -112,8 +115,7 @@ class OS {
                     break;
                 }
             }
-        }
-        this.render(hS);
+        });
         this.ram.flush();
     }
 
